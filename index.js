@@ -21,16 +21,19 @@ app.use(
 // Session config (use express-session)
 app.use(
   session({
-    secret: "flipxsecret", // change this in production
+    name: "flipx-session",
+    secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, // ✅ true for HTTPS on Render
-      sameSite: "none", // ✅ required for cross-site cookie use
+      httpOnly: true,
+      secure: true,
+      sameSite: "none", // 🟢 This is crucial for cross-domain sessions
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
+
 
 // Passport setup
 app.use(passport.initialize());
