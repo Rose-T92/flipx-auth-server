@@ -9,6 +9,8 @@ dotenv.config();
 
 const app = express();
 
+app.set("trust proxy", 1); // 🟢 Enables correct handling of secure cookies behind Render's proxy
+
 // CORS config for frontend
 app.use(
   cors({
@@ -20,6 +22,8 @@ app.use(
 
 // Session config (use express-session)
 app.set("trust proxy", 1); // 🛡️ Tell Express we're behind a proxy (Render)
+
+app.set("trust proxy", 1); // 🟢 Enables correct handling of secure cookies behind Render's proxy
 
 app.use(
   session({
