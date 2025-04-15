@@ -83,6 +83,8 @@ app.get(
 );
 
 app.get("/auth/user", (req, res) => {
+  console.log("🔐 Session check — req.user:", req.user);
+  console.log("📦 Session data:", req.session);
   res.json(req.user || null);
 });
 
