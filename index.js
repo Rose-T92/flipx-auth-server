@@ -45,12 +45,14 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Session handlers
 passport.serializeUser((user, done) => {
-  done(null, user);
+  console.log("Deserializing:", id);
+  done(null, user.id);
 });
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
+
+passport.deserializeUser((id, done) => {
+  // In real apps you'd fetch from DB. For now, we’ll assume session has everything.
+  done(null, { id }); // For now just return the ID
 });
 
 // Google Strategy
