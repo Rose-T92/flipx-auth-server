@@ -19,21 +19,23 @@ app.use(
 );
 
 // Session config (use express-session)
+app.set("trust proxy", 1); // 🛡️ Tell Express we're behind a proxy (Render)
+
 app.use(
   session({
     name: "flipx-session",
     secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
+    proxy: true, // ✅ This is crucial for cross-site cookies on Render
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: "none", // 🟢 This is crucial for cross-domain sessions
+      sameSite: "none", // ✅ Needed for cross-site cookie
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
-
 
 // Passport setup
 app.use(passport.initialize());
