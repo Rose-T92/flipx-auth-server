@@ -9,33 +9,34 @@ dotenv.config();
 
 const app = express();
 
-// CORS config for frontend on Render
+// CORS config for frontend
 app.use(
   cors({
-    origin: "https://flipx-auth.onrender.com",
+    origin: "https://flipx-auth.onrender.com", // ✅ your frontend URL
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
 );
 
-// Use express-session for session handling
+// Session config (use express-session)
 app.use(
   session({
-    secret: "flipxsecret",
+    secret: "flipxsecret", // change this in production
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, // Set false locally if not using HTTPS
+      secure: true, // ✅ true for HTTPS on Render
+      sameSite: "none", // ✅ required for cross-site cookie use
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
 
-// Passport initialization
+// Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
-// User session handling
+// Session handlers
 passport.serializeUser((user, done) => {
   done(null, user);
 });
@@ -49,7 +50,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback",
+      callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback", // ✅ backend URL
     },
     (accessToken, refreshToken, profile, done) => {
       return done(null, profile);
@@ -59,7 +60,7 @@ passport.use(
 
 // Routes
 app.get("/", (req, res) => {
-  res.send("FlipXDeals Auth Server Running!");
+  res.send("✅ FlipXDeals Auth Server Running!");
 });
 
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
@@ -68,26 +69,42 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/auth/failure",
-    successRedirect: "https://flipx-auth.onrender.com",
+    successRedirect: "https://flipx-auth.onrender.com", // ✅ frontend on success
   })
 );
 
+app.get("/auth/user", (req, res) => {
+  res.json(req.user || null);
+});
+
 app.get("/auth/logout", (req, res) => {
   req.logout(() => {
-    res.redirect("https://flipx-auth.onrender.com");
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid", {
+        path: "/",
+        sameSite: "none",
+        secure: true,
+      });
+      res.redirect("https://flipx-auth.onrender.com"); // ✅ redirect back to frontend
+    });
   });
 });
 
-app.get("/auth/user", (req, res) => {
-  res.send(req.user || null);
+app.get("/auth/failure", (req, res) => {
+  res.status(401).send("Login failed. Please try again.");
 });
 
-app.get("/auth/failure", (req, res) => {
-  res.send("Login failed!");
+// ✅ Debug route to test session status
+app.get("/debug-session", (req, res) => {
+  res.json({
+    loggedIn: !!req.user,
+    user: req.user || null,
+    session: req.session || null,
+  });
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
 });
