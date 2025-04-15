@@ -1,25 +1,13 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const cookieSession = require("cookie-session");
+const session = require("express-session");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 dotenv.config();
 
 const app = express();
-
-// Session config
-app.use(
-  cookieSession({
-    name: "session",
-    keys: ["flipxsecret"],
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 // CORS config for frontend on Render
 app.use(
@@ -29,6 +17,23 @@ app.use(
     credentials: true,
   })
 );
+
+// Use express-session for session handling
+app.use(
+  session({
+    secret: "flipxsecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true, // Set false locally if not using HTTPS
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
 
 // User session handling
 passport.serializeUser((user, done) => {
@@ -47,7 +52,6 @@ passport.use(
       callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback",
     },
     (accessToken, refreshToken, profile, done) => {
-      // You could add database logic here
       return done(null, profile);
     }
   )
@@ -69,8 +73,9 @@ app.get(
 );
 
 app.get("/auth/logout", (req, res) => {
-  req.logout();
-  res.redirect("https://flipx-auth.onrender.com");
+  req.logout(() => {
+    res.redirect("https://flipx-auth.onrender.com");
+  });
 });
 
 app.get("/auth/user", (req, res) => {
@@ -81,6 +86,7 @@ app.get("/auth/failure", (req, res) => {
   res.send("Login failed!");
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
