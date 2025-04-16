@@ -12,31 +12,23 @@ const app = express();
 app.set("trust proxy", 1);
 
 // 🌐 Allow frontend to send credentials
-app.use(
-  cors({
-    origin: "https://flipx-auth.onrender.com",
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true,
-  })
-);
+app.set("trust proxy", 1); // ✅ tell Express we're behind Render's proxy
 
-// 🗝️ Session config
 app.use(
   session({
-    name: "connect.sid", // 🟢 Force default name so browser sends it back
+    name: "flipx-session",
     secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
-    proxy: true,
+    proxy: true, // ✅ required for secure cookies with proxies (Render)
     cookie: {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
   })
 );
-
 
 // 🧠 Passport
 app.use(passport.initialize());
@@ -78,12 +70,19 @@ app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "em
 
 app.get(
   "/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: "/auth/failure",
-    successRedirect: "https://flipx-auth.onrender.com",
-    session: true,
-  })
+  passport.authenticate("google", { failureRedirect: "/auth/failure" }),
+  (req, res) => {
+    // 🔒 Manually save session before redirect
+    req.login(req.user, (err) => {
+      if (err) {
+        console.error("❌ Login error:", err);
+        return res.redirect("/auth/failure");
+      }
+      return res.redirect("https://flipx-auth.onrender.com");
+    });
+  }
 );
+
 
 app.get("/auth/user", (req, res) => {
   console.log("🔐 Session check — req.user:", req.user);
