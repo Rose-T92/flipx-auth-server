@@ -23,7 +23,7 @@ app.use(
 // 🗝️ Session config
 app.use(
   session({
-    name: "flipx-session",
+    name: "connect.sid", // 🟢 Force default name so browser sends it back
     secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
@@ -36,6 +36,7 @@ app.use(
     },
   })
 );
+
 
 // 🧠 Passport
 app.use(passport.initialize());
@@ -89,7 +90,7 @@ app.get("/auth/user", (req, res) => {
 app.get("/auth/logout", (req, res) => {
   req.logout(() => {
     req.session.destroy(() => {
-      res.clearCookie("flipx-session", {
+      res.clearCookie("connect.sid", {
         path: "/",
         sameSite: "none",
         secure: true,
