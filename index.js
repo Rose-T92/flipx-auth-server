@@ -44,11 +44,11 @@ app.use(passport.session());
 
 // ✅ Serialize full profile
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, user); // 🟢 Save entire profile in session
 });
 
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
+passport.deserializeUser((user, done) => {
+  done(null, user); // 🟢 Retrieve full profile
 });
 
 // 🔐 Google Strategy
