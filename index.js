@@ -11,7 +11,7 @@ const app = express();
 // ✅ Set trust proxy for Render (enables secure cookies)
 app.set("trust proxy", 1);
 
-// ✅ Session must come before CORS for cookie headers to be handled
+// ✅ Session config (must come before CORS)
 app.use(
   session({
     name: "flipx-session",
@@ -81,7 +81,9 @@ app.get(
         console.error("❌ Login error:", err);
         return res.redirect("/auth/failure");
       }
-      return res.redirect("https://flipx-auth.onrender.com");
+      req.session.save(() => {
+        return res.redirect("https://flipx-auth.onrender.com");
+      });
     });
   }
 );
@@ -106,6 +108,15 @@ app.get("/auth/logout", (req, res) => {
 
 app.get("/auth/failure", (req, res) => {
   res.status(401).send("Login failed. Please try again.");
+});
+
+// 🔍 Debug route for Set-Cookie test
+app.get("/debug-headers", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    "debug-cookie=test; Path=/; Secure; SameSite=None"
+  );
+  res.send("Cookie header sent!");
 });
 
 const PORT = process.env.PORT || 10000;
