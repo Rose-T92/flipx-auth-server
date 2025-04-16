@@ -76,14 +76,8 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth/failure" }),
   (req, res) => {
-    req.login(req.user, (err) => {
-      if (err) {
-        console.error("❌ Login error:", err);
-        return res.redirect("/auth/failure");
-      }
-      req.session.save(() => {
-        return res.redirect("https://flipx-auth.onrender.com");
-      });
+    req.session.save(() => {
+      res.redirect("https://flipx-auth.onrender.com");
     });
   }
 );
