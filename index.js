@@ -41,11 +41,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.serializeUser((user, done) => {
-  done(null, user); // Store full profile
+  done(null, user); // ✅ Stores full profile in session
 });
 
-passport.deserializeUser((user, done) => {
-  done(null, user); // Retrieve full profile
+passport.deserializeUser((obj, done) => {
+  done(null, obj); // ✅ Restores full user object from session
 });
 
 // Google Strategy
