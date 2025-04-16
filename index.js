@@ -40,14 +40,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Store full user in session
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, user); // Store full profile
 });
 
 passport.deserializeUser((user, done) => {
-  console.log("🔁 Deserializing user:", user);
-  done(null, user);
+  done(null, user); // Retrieve full profile
 });
 
 // Google Strategy
