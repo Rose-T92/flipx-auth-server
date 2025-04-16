@@ -43,12 +43,12 @@ app.use(passport.session());
 
 passport.serializeUser((user, done) => {
   console.log("✅ Serializing user:", user.displayName);
-  done(null, user);
+  done(null, user); // Save full profile
 });
 
-passport.deserializeUser((user, done) => {
-  console.log("✅ Deserializing user:", user.displayName);
-  done(null, user);
+passport.deserializeUser((obj, done) => {
+  console.log("✅ Deserializing user:", obj.displayName);
+  done(null, obj); // Retrieve full profile
 });
 
 passport.use(
@@ -76,8 +76,14 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth/failure" }),
   (req, res) => {
-    req.session.save(() => {
-      res.redirect("https://flipx-auth.onrender.com");
+    req.login(req.user, (err) => {
+      if (err) {
+        console.error("❌ Login error:", err);
+        return res.redirect("/auth/failure");
+      }
+      req.session.save(() => {
+        res.redirect("https://flipx-auth.onrender.com");
+      });
     });
   }
 );
@@ -104,16 +110,16 @@ app.get("/auth/failure", (req, res) => {
   res.status(401).send("Login failed. Please try again.");
 });
 
-// 🔍 Debug route for Set-Cookie test
-app.get("/debug-headers", (req, res) => {
-  res.setHeader(
-    "Set-Cookie",
-    "debug-cookie=test; Path=/; Secure; SameSite=None"
-  );
-  res.send("Cookie header sent!");
+// 🔍 Cookie debug route
+app.get("/debug", (req, res) => {
+  res.json({
+    cookies: req.headers.cookie || "no cookie",
+    session: req.session,
+    user: req.user,
+  });
 });
 
-// 🔎 Debug route for session inspection
+// 🔎 Verbose session dump
 app.get("/session-debug", (req, res) => {
   res.setHeader("Content-Type", "text/plain");
   res.send(`
@@ -129,6 +135,7 @@ ${JSON.stringify(req.user, null, 2)}
   `);
 });
 
+// ✅ Start server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
