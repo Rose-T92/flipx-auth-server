@@ -40,15 +40,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.serializeUser((user, done) => {
-  done(null, user); // ✅ Stores full profile in session
-});
-
-passport.deserializeUser((obj, done) => {
-  done(null, obj); // ✅ Restores full user object from session
-});
-
-// Google Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -57,11 +48,18 @@ passport.use(
       callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback",
     },
     (accessToken, refreshToken, profile, done) => {
-      console.log("✅ Google profile:", profile);
-      return done(null, profile); // Pass the whole profile to session
+      return done(null, profile); // <== This is correct
     }
   )
 );
+
+passport.serializeUser((user, done) => {
+  done(null, user); // ✅ Store full profile
+});
+
+passport.deserializeUser((obj, done) => {
+  done(null, obj); // ✅ Retrieve full profile
+});
 
 // Routes
 app.get("/", (req, res) => {
@@ -74,7 +72,8 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/auth/failure",
-    successRedirect: "https://flipx-auth.onrender.com", // ✅ Your frontend URL
+    successRedirect: "https://flipx-auth.onrender.com", // ✅ this is fine
+    session: true, // ✅ Make sure this is included (just in case)
   })
 );
 
