@@ -8,44 +8,49 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 dotenv.config();
 const app = express();
 
-// 🛡️ Proxy support for secure cookies on Render
+// ✅ Set trust proxy for Render (enables secure cookies)
 app.set("trust proxy", 1);
 
-// 🌐 Allow frontend to send credentials
-app.set("trust proxy", 1); // ✅ tell Express we're behind Render's proxy
-
+// ✅ Session must come before CORS for cookie headers to be handled
 app.use(
   session({
     name: "flipx-session",
     secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
-    proxy: true, // ✅ required for secure cookies with proxies (Render)
+    proxy: true,
     cookie: {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
 
-// 🧠 Passport
+// ✅ CORS setup (after session)
+app.use(
+  cors({
+    origin: "https://flipx-auth.onrender.com",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+// ✅ Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 🛠️ Correct session setup
 passport.serializeUser((user, done) => {
   console.log("✅ Serializing user:", user.displayName);
-  done(null, user); // Store entire profile
+  done(null, user);
 });
 
 passport.deserializeUser((user, done) => {
   console.log("✅ Deserializing user:", user.displayName);
-  done(null, user); // Retrieve entire profile
+  done(null, user);
 });
 
-// ✅ Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -55,13 +60,12 @@ passport.use(
     },
     (accessToken, refreshToken, profile, done) => {
       console.log("✅ Google Profile:", profile.displayName);
-      return done(null, profile); // Pass the whole profile to serializeUser
+      return done(null, profile);
     }
   )
 );
 
-
-// 🚀 Routes
+// ✅ Routes
 app.get("/", (req, res) => {
   res.send("✅ FlipXDeals Auth Server Running!");
 });
@@ -72,7 +76,6 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth/failure" }),
   (req, res) => {
-    // 🔒 Manually save session before redirect
     req.login(req.user, (err) => {
       if (err) {
         console.error("❌ Login error:", err);
@@ -82,7 +85,6 @@ app.get(
     });
   }
 );
-
 
 app.get("/auth/user", (req, res) => {
   console.log("🔐 Session check — req.user:", req.user);
@@ -106,7 +108,6 @@ app.get("/auth/failure", (req, res) => {
   res.status(401).send("Login failed. Please try again.");
 });
 
-// Start
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
