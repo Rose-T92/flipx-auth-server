@@ -42,16 +42,18 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Serialize full profile
+// 🛠️ Correct session setup
 passport.serializeUser((user, done) => {
-  done(null, user); // 🟢 Save entire profile in session
+  console.log("✅ Serializing user:", user.displayName);
+  done(null, user); // Store entire profile
 });
 
 passport.deserializeUser((user, done) => {
-  done(null, user); // 🟢 Retrieve full profile
+  console.log("✅ Deserializing user:", user.displayName);
+  done(null, user); // Retrieve entire profile
 });
 
-// 🔐 Google Strategy
+// ✅ Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -61,10 +63,11 @@ passport.use(
     },
     (accessToken, refreshToken, profile, done) => {
       console.log("✅ Google Profile:", profile.displayName);
-      return done(null, profile);
+      return done(null, profile); // Pass the whole profile to serializeUser
     }
   )
 );
+
 
 // 🚀 Routes
 app.get("/", (req, res) => {
