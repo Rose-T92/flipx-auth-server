@@ -113,6 +113,22 @@ app.get("/debug-headers", (req, res) => {
   res.send("Cookie header sent!");
 });
 
+// 🔎 Debug route for session inspection
+app.get("/session-debug", (req, res) => {
+  res.setHeader("Content-Type", "text/plain");
+  res.send(`
+===== SESSION DEBUG =====
+COOKIES:
+${req.headers.cookie || "None"}
+
+SESSION:
+${JSON.stringify(req.session, null, 2)}
+
+USER:
+${JSON.stringify(req.user, null, 2)}
+  `);
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
