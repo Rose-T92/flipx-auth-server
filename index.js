@@ -8,51 +8,46 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 dotenv.config();
 
 const app = express();
-
-app.set("trust proxy", 1); // 🟢 Enables correct handling of secure cookies behind Render's proxy
+app.set("trust proxy", 1); // 🟢 Render-specific for secure cookies
 
 // CORS config for frontend
 app.use(
   cors({
-    origin: "https://flipx-auth.onrender.com", // ✅ your frontend URL
+    origin: "https://flipx-auth.onrender.com", // ✅ Your frontend URL
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
 );
 
-// Session config (use express-session)
-app.set("trust proxy", 1); // 🛡️ Tell Express we're behind a proxy (Render)
-
-app.set("trust proxy", 1); // 🟢 Enables correct handling of secure cookies behind Render's proxy
-
+// Session config
 app.use(
   session({
     name: "flipx-session",
     secret: "flipxsecret",
     resave: false,
     saveUninitialized: false,
-    proxy: true, // ✅ This is crucial for cross-site cookies on Render
+    proxy: true,
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: "none", // ✅ Needed for cross-site cookie
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
 
-// Passport setup
+// Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Store full user in session
 passport.serializeUser((user, done) => {
-  console.log("Deserializing:", id);
-  done(null, user.id);
+  done(null, user);
 });
 
-passport.deserializeUser((id, done) => {
-  // In real apps you'd fetch from DB. For now, we’ll assume session has everything.
-  done(null, { id }); // For now just return the ID
+passport.deserializeUser((user, done) => {
+  console.log("🔁 Deserializing user:", user);
+  done(null, user);
 });
 
 // Google Strategy
@@ -61,10 +56,11 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback", // ✅ backend URL
+      callbackURL: "https://flipx-auth-server.onrender.com/auth/google/callback",
     },
     (accessToken, refreshToken, profile, done) => {
-      return done(null, profile);
+      console.log("✅ Google profile:", profile);
+      return done(null, profile); // Pass the whole profile to session
     }
   )
 );
@@ -80,13 +76,12 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/auth/failure",
-    successRedirect: "https://flipx-auth.onrender.com", // ✅ frontend on success
+    successRedirect: "https://flipx-auth.onrender.com", // ✅ Your frontend URL
   })
 );
 
 app.get("/auth/user", (req, res) => {
   console.log("🔐 Session check — req.user:", req.user);
-  console.log("📦 Session data:", req.session);
   res.json(req.user || null);
 });
 
@@ -98,7 +93,7 @@ app.get("/auth/logout", (req, res) => {
         sameSite: "none",
         secure: true,
       });
-      res.redirect("https://flipx-auth.onrender.com"); // ✅ redirect back to frontend
+      res.redirect("https://flipx-auth.onrender.com");
     });
   });
 });
@@ -107,16 +102,6 @@ app.get("/auth/failure", (req, res) => {
   res.status(401).send("Login failed. Please try again.");
 });
 
-// ✅ Debug route to test session status
-app.get("/debug-session", (req, res) => {
-  res.json({
-    loggedIn: !!req.user,
-    user: req.user || null,
-    session: req.session || null,
-  });
-});
-
-// Start server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Auth server running on port ${PORT}`);
